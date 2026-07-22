@@ -19,11 +19,11 @@ st.markdown("Powered by Auto-Ingestion, Hybrid MMR/BM25 Search, and Flashrank Cr
 #def load_rag_backend():
   #  device = "cuda" if torch.cuda.is_available() else "cpu"
 
-    emb_fn = HuggingFaceEmbeddings(
-        model_name="all-MiniLM-L6-v2",
-        model_kwargs={'device': device},
-        encode_kwargs={'normalize_embeddings': True}
-    )
+emb_fn = HuggingFaceEmbeddings(
+  model_name="all-MiniLM-L6-v2",
+  model_kwargs={'device': device},
+  encode_kwargs={'normalize_embeddings': True}
+  )
 
     db_path = "./chroma_db"
     

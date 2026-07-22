@@ -1,5 +1,4 @@
 import streamlit as st
-#import torch
 import os
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
@@ -16,14 +15,13 @@ st.title("🩺 Clinical Protocol & Guidelines RAG Assistant")
 st.markdown("Powered by Auto-Ingestion, Hybrid MMR/BM25 Search, and Flashrank Cross-Encoder Reranking.")
 
 @st.cache_resource
-#def load_rag_backend():
-  #  device = "cuda" if torch.cuda.is_available() else "cpu"
-
-emb_fn = HuggingFaceEmbeddings(
-  model_name="all-MiniLM-L6-v2",
-  model_kwargs={'device': device},
-  encode_kwargs={'normalize_embeddings': True}
-  )
+def load_rag_backend():
+    # Initialize CPU-compatible embeddings without requiring torch import declaration hacks
+    emb_fn = HuggingFaceEmbeddings(
+        model_name="all-MiniLM-L6-v2",
+        model_kwargs={'device': 'cpu'},
+        encode_kwargs={'normalize_embeddings': True}
+    )
 
     db_path = "./chroma_db"
     
@@ -42,7 +40,6 @@ emb_fn = HuggingFaceEmbeddings(
         
         if available_pdfs:
             source_pdf = available_pdfs[0]
-            #st.warning(f"⚠️ Found '{source_pdf}'. Ingesting into Chroma DB...")
             loader = PyPDFLoader(source_pdf)
             raw_docs = loader.load()
             text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=200)
@@ -58,7 +55,7 @@ emb_fn = HuggingFaceEmbeddings(
         else:
             from langchain_core.documents import Document
             fallback_doc = Document(
-                page_content="Clinical Guidelines Fallback: Please upload a medical guideline PDF to your Colab environment files directory.",
+                page_content="Clinical Guidelines Fallback: Please upload a medical guideline PDF to your repository files directory.",
                 metadata={"Section": "General Notice"}
             )
             vector_store = Chroma.from_documents(
@@ -118,26 +115,25 @@ if query := st.chat_input("Ask a clinical query (e.g., Metformin side effects & 
                 context_str = "\n\n".join([f"Source Metadata: {doc.metadata}\nContent: {doc.page_content}" for doc in retrieved_context])
 
                 system_prompt = f"""
-                    You are an super specialist clinical support AI Assistant.You do not have knowledge in fields OTHER THAN 
-                    CLINICAL field, YOU have no knoweldge in general medicine or general health conditions/deseases. 
-                    if the query is not clinical or is abot general health conditions say SORRY.
+                    You are a super specialist clinical support AI Assistant. You do not have knowledge in fields OTHER THAN 
+                    CLINICAL field, YOU have no knowledge in general medicine or general health conditions/diseases. 
+                    If the query is not clinical or is about general health conditions say SORRY.
 
                     GUIDELINES FOR ANSWERING:
-                    1. **You are a Medical Professional, you can reply to uestions related to mdicial field and is related to the conext {context_str}.
-                    2. **Clinical & Medical Queries:** Answer comprehensively using *only* the provided context chunks. Combine information from multiple sections across the chunks if needed. Do not extrapolate outside medical knowledge. If clinical info is genuinely absent, state: 'Insufficient clinical guidelines data provided.'
-                    3. **General or Personal Queries (e.g., names like Manju, casual chat, greetings):** If the user asks about a person, general knowledge, or casual conversation that is not a medical guideline query, respond naturally, politely, and helpfully using common sense, while letting them know whether it appears in the documents or not. 
-                    4. **Safety First:** If a user expresses any form of distress, self-harm, or emotional crisis, respond with SORRY.
-                    5. **DO NOT ANSWER IF IT IS NOT CLINICAL.
-                    6. ** DO NOT ANSWER only the query has matching conext chunks.
-                    7. ** if the chunk is "Clinical Guidelines Fallback: Please upload a medical guideline PDF to your Colab environment files directory.",say sorryyyy...
+                    1. You are a Medical Professional, you can reply to questions related to the medical field and related to the context {context_str}.
+                    2. Clinical & Medical Queries: Answer comprehensively using *only* the provided context chunks. Combine information from multiple sections across the chunks if needed. Do not extrapolate outside medical knowledge. If clinical info is genuinely absent, state: 'Insufficient clinical guidelines data provided.'
+                    3. General or Personal Queries (e.g., names like Manju, casual chat, greetings): If the user asks about a person, general knowledge, or casual conversation that is not a medical guideline query, respond naturally, politely, and helpfully using common sense, while letting them know whether it appears in the documents or not. 
+                    4. Safety First: If a user expresses any form of distress, self-harm, or emotional crisis, respond with SORRY.
+                    5. DO NOT ANSWER IF IT IS NOT CLINICAL.
+                    6. DO NOT ANSWER unless the query has matching context chunks.
+                    7. If the chunk is "Clinical Guidelines Fallback: Please upload a medical guideline PDF to your repository files directory.", say sorry...
 
+                    CONTEXT:
+                    {context_str}
 
-                CONTEXT:
-                {context_str}
-
-                Clinical Query: {query}
-                Answer:
-                """                
+                    Clinical Query: {query}
+                    Answer:
+                    """                
 
                 groq_api_key = os.environ.get("GROQ_API_KEY")
                 groq_client = Groq(api_key=groq_api_key)
@@ -164,20 +160,3 @@ if query := st.chat_input("Ask a clinical query (e.g., Metformin side effects & 
 
             except Exception as e:
                 st.error(f"Error handling clinical inference: {e}")
-import os
-import subprocess
-from pyngrok import ngrok
-from google.colab import userdata
-
-# Load Groq API key securely from Colab secrets (Name it 'groq_api')
-
-os.environ["GROQ_API_KEY"] = userdata.get('groq_api')
-
-# Configure Ngrok
-ngrok.kill()
-ngrok.set_auth_token("2gbEhmyrGpSn4VIcX0ebELtA0Vs_6rXpaAcuxH3AtqKxHiKBS")
-
-# Launch Streamlit via Subprocess and connect Ngrok
-subprocess.Popen(["streamlit", "run", "app.py", "--server.port=8501"])
-public_url = ngrok.connect(8501)
-print(f"🚀 Streamlit App is live at: {public_url}")

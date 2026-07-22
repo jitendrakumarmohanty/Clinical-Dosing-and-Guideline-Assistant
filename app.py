@@ -1,5 +1,5 @@
 import streamlit as st
-import torch
+#import torch
 import os
 from langchain_community.retrievers import BM25Retriever
 from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
@@ -16,8 +16,8 @@ st.title("🩺 Clinical Protocol & Guidelines RAG Assistant")
 st.markdown("Powered by Auto-Ingestion, Hybrid MMR/BM25 Search, and Flashrank Cross-Encoder Reranking.")
 
 @st.cache_resource
-def load_rag_backend():
-    device = "cuda" if torch.cuda.is_available() else "cpu"
+#def load_rag_backend():
+  #  device = "cuda" if torch.cuda.is_available() else "cpu"
 
     emb_fn = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2",

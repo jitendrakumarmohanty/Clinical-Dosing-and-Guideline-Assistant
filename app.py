@@ -1,7 +1,7 @@
 import streamlit as st
 import os
 from langchain_community.retrievers import BM25Retriever
-from langchain_classic.retrievers import EnsembleRetriever, ContextualCompressionRetriever
+from langchain.retrievers import EnsembleRetriever, ContextualCompressionRetriever
 from langchain_community.document_compressors import FlashrankRerank
 from langchain_community.embeddings import HuggingFaceEmbeddings
 from langchain_chroma import Chroma
@@ -16,7 +16,6 @@ st.markdown("Powered by Auto-Ingestion, Hybrid MMR/BM25 Search, and Flashrank Cr
 
 @st.cache_resource
 def load_rag_backend():
-    # Initialize CPU-compatible embeddings without requiring torch import declaration hacks
     emb_fn = HuggingFaceEmbeddings(
         model_name="all-MiniLM-L6-v2",
         model_kwargs={'device': 'cpu'},
@@ -115,18 +114,15 @@ if query := st.chat_input("Ask a clinical query (e.g., Metformin side effects & 
                 context_str = "\n\n".join([f"Source Metadata: {doc.metadata}\nContent: {doc.page_content}" for doc in retrieved_context])
 
                 system_prompt = f"""
-                    You are a super specialist clinical support AI Assistant. You do not have knowledge in fields OTHER THAN 
-                    CLINICAL field, YOU have no knowledge in general medicine or general health conditions/diseases. 
+                    You are a specialist clinical support AI Assistant. You do not have knowledge in fields OTHER THAN 
+                    CLINICAL fields, and you have no knowledge in general medicine or general health conditions/diseases. 
                     If the query is not clinical or is about general health conditions say SORRY.
 
                     GUIDELINES FOR ANSWERING:
-                    1. You are a Medical Professional, you can reply to questions related to the medical field and related to the context {context_str}.
-                    2. Clinical & Medical Queries: Answer comprehensively using *only* the provided context chunks. Combine information from multiple sections across the chunks if needed. Do not extrapolate outside medical knowledge. If clinical info is genuinely absent, state: 'Insufficient clinical guidelines data provided.'
-                    3. General or Personal Queries (e.g., names like Manju, casual chat, greetings): If the user asks about a person, general knowledge, or casual conversation that is not a medical guideline query, respond naturally, politely, and helpfully using common sense, while letting them know whether it appears in the documents or not. 
-                    4. Safety First: If a user expresses any form of distress, self-harm, or emotional crisis, respond with SORRY.
-                    5. DO NOT ANSWER IF IT IS NOT CLINICAL.
-                    6. DO NOT ANSWER unless the query has matching context chunks.
-                    7. If the chunk is "Clinical Guidelines Fallback: Please upload a medical guideline PDF to your repository files directory.", say sorry...
+                    1. You are a Medical Professional, you can reply to questions related to the medical field and related to the context.
+                    2. Clinical & Medical Queries: Answer comprehensively using *only* the provided context chunks.
+                    3. Safety First: If a user expresses any form of distress, self-harm, or emotional crisis, respond with SORRY.
+                    4. DO NOT ANSWER IF IT IS NOT CLINICAL.
 
                     CONTEXT:
                     {context_str}

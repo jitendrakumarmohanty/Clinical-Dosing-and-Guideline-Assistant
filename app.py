@@ -131,7 +131,11 @@ if query := st.chat_input("Ask a clinical query (e.g., Metformin side effects & 
                     Answer:
                     """                
 
-                groq_api_key = os.environ.get("GROQ_API_KEY")
+                #groq_api_key = os.environ.get("GROQ_API_KEY")
+                #groq_client = Groq(api_key=groq_api_key)
+
+                # Look into Streamlit secrets first, then fall back to environment variables
+                groq_api_key = st.secrets.get("GROQ_API_KEY") or os.environ.get("GROQ_API_KEY")
                 groq_client = Groq(api_key=groq_api_key)
 
                 completion = groq_client.chat.completions.create(
